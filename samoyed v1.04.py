@@ -52,7 +52,6 @@ def calculate(start_asset, middle_asset, final_asset):
 
 '''
 Determines dollar value ratio of start/final asset
-F12 BIOS UPGRADE revision 1
 '''
 def usdt_conversion(start_asset, balance, final_asset, final_asset_balance):
     bit = get_bittrex_instance()
