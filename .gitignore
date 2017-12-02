@@ -1,3 +1,6 @@
-/bittrex.py
-/__pycache__
-.idea/
+# api file
+bittrex.py
+
+# interpreter + ide 
+__pycache__
+.idea
