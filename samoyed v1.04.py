@@ -13,7 +13,6 @@ Returns instance of bittrex using api key/secret
 '''
 def get_bittrex_instance():
     return Bittrex('', '')
-    print("")
 
 '''
 Returns 0 or 1 (isn't BTC or is BTC), and the balance
