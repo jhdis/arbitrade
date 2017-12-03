@@ -28,5 +28,9 @@ i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
 
 Once found, the **total contents of the wallet will be used**.  Choice of starting balance will be added in the future.
 
+## TO DO
+- Implement trading
+- Make use of uid for order placements
+
 ## Acknowledgments
 This is built using a python wrapper for Bittrex's API found [here](https://github.com/ericsomdahl/python-bittrex).
