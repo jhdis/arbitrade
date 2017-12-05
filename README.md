@@ -22,7 +22,7 @@ def get_bittrex_instance():
 When determining whether to start with BTC or ETH, the program determines which asset you currently contain the greatest dollar value using Tether markets in the following fashion:
 
 ```
-btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*bit.get_orderbook('USDT-ETH', 'buy'), bit.get_balance('BTC')['result']['Balance']*bit.get_orderbook('USDT-BTC', 'buy')]
+btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*usdt_conversion('ETH'), bit.get_balance('BTC')['result']['Balance']*usdt_conversion('BTC')]
 i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
 ```
 
@@ -30,7 +30,7 @@ Once found, the **total contents of the wallet will be used**.  Choice of starti
 
 ## TO DO
 - Implement trading
-- Make use of uid for order placements
+- Fill or kill
 
 ## Acknowledgments
 This is built using a python wrapper for Bittrex's API found [here](https://github.com/ericsomdahl/python-bittrex).

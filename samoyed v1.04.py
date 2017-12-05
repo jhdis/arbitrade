@@ -19,7 +19,7 @@ Returns 0 or 1 (isn't BTC or is BTC), and the balance
 '''
 def check_balances():
     bit = get_bittrex_instance()
-    btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*bit.get_orderbook('USDT-ETH', 'buy'), bit.get_balance('BTC')['result']['Balance']*bit.get_orderbook('USDT-BTC', 'buy')]
+    btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*usdt_conversion('ETH'), bit.get_balance('BTC')['result']['Balance']*usdt_conversion('BTC')]
     i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
     return i, balance
 
@@ -37,6 +37,9 @@ def arbitrage_loop():
         profitability = calculate(start_asset,  middle_asset, currency_check(not bool_val))
         print(profitability)
         if profitability > 1:
+            '''
+            This is where transaction takes place.
+            '''
             print("Trade advised.")
         else:
             print("Trade not advised.")
@@ -48,17 +51,17 @@ def calculate(start_asset, middle_asset, final_asset):
     balance = .9975062344
     middle_asset_balance = order_finder(start_asset, balance, middle_asset, 'buy')
     final_asset_balance = .9975*order_finder(final_asset, middle_asset_balance, middle_asset, 'sell')
-    return usdt_conversion(start_asset, balance, final_asset, final_asset_balance)
+    return (final_asset_balance*usdt_conversion(final_asset))/(balance*usdt_conversion(start_asset))
 
 '''
 Determines dollar value ratio of start/final asset
 '''
-def usdt_conversion(start_asset, balance, final_asset, final_asset_balance):
+def usdt_conversion(asset):
     bit = get_bittrex_instance()
-    return (final_asset_balance*bit.get_orderbook('USDT-' + final_asset, 'buy')['result'][0]['Rate'])/(balance*bit.get_orderbook('USDT-' + start_asset, 'buy')['result'][0]['Rate'])
+    return bit.get_orderbook('USDT-' + asset, 'buy')['result'][0]['Rate']
 
 '''
-Retrieves the orderbook of supplied type and finds order of sufficient quantity
+Retrieves the orderbook of supplied type and finds order of sufficient quantity for fill or kill
 '''
 def order_finder(start_asset, balance, final_asset, order_type):
     bit = get_bittrex_instance()
