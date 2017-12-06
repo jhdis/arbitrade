@@ -32,6 +32,7 @@ Once found, the **total contents of the wallet will be used**.  Choice of starti
 - Fill or kill trading
 - Cancel open orders when program is terminated
 - Final trade (BTC-ETH/ETH-BTC) on cycle completion
+- Rate return
 
 ## Acknowledgments
 This is built using a python wrapper for Bittrex's API found [here](https://github.com/ericsomdahl/python-bittrex).
