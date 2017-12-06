@@ -40,19 +40,20 @@ def arbitrage_loop():
             start_asset = currency_check(bool_val)
             middle_asset = next(middle_assets_iterator)
             profitability = calculate(start_asset,  middle_asset, currency_check(not bool_val))
-            print(profitability)
+            print(start_asset, "->", middle_asset, "->", currency_check(not bool_val), "=", 100*profitability, "% of pre-trade balance.")
             if profitability > 1:
                 '''
                 This is where transaction takes place.
                 '''
-                print("Trade advised.")
+                print("Trade completed.")
             else:
-                print("Trade not advised.")
+                print("Trade skipped.")
     except Exception:
         '''
-        Print the state of holdings?
+        In the event the program is terminated in the middle of a transaction, balances are printed.
         '''
-        print("\nCancelled")
+        print("Holdings:", bit.get_balance('BTC')['result']['Balance'], "BTC,", bit.get_balance('ETH')['result']['Balance'], "ETH,", bit.get_balance(middle_asset)['result']['Balance'], middle_asset)
+        print("\nTerminated.")
         exit(0)
 
 '''
@@ -60,8 +61,8 @@ Calculates dollar value post trade(s)
 '''
 def calculate(start_asset, middle_asset, final_asset):
     balance = .9975062344
-    middle_asset_balance = order_finder(start_asset, balance, middle_asset, 'buy')
-    final_asset_balance = .9975*order_finder(final_asset, middle_asset_balance, middle_asset, 'sell')
+    middle_asset_balance = order_finder(start_asset, balance, middle_asset, 'sell')
+    final_asset_balance = .9975*order_finder(final_asset, middle_asset_balance, middle_asset, 'buy')
     return (final_asset_balance*usdt_conversion(final_asset))/(balance*usdt_conversion(start_asset))
 
 '''
@@ -78,7 +79,7 @@ def order_finder(start_asset, balance, final_asset, order_type):
     bit = get_bittrex_instance()
     orders = bit.get_orderbook(start_asset + '-' + final_asset, order_type)['result']
     for order in orders:
-        if order_type == 'buy':
+        if order_type == 'sell':
             final_asset_balance = balance / order['Rate']
         else:
             final_asset_balance = balance * order['Rate']
@@ -92,7 +93,7 @@ USE THIS TYPE OF FORMAT FOR THE ACTUAL TRANSACTIONS
 '''
 
 '''
-If bool is 1, begin using BTC. If bool is 0, being using ETH.
+If bool is 1, begin using BTC. If bool is 0, begin using ETH.
 '''
 def currency_check(bool):
     if bool == True:
