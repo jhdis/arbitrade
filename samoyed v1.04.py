@@ -3,10 +3,7 @@ from itertools import cycle
 import time
 
 def main():
-    try:
-        arbitrage_loop()
-    except KeyboardInterrupt:
-        print("\nCancelled")
+    arbitrage_loop()
 
 '''
 Returns instance of bittrex using api key/secret
@@ -15,34 +12,48 @@ def get_bittrex_instance():
     return Bittrex('', '')
 
 '''
-Returns 0 or 1 (isn't BTC or is BTC), and the balance
+Returns 0 or 1 (ETH or BTC), and the balance
 '''
 def check_balances():
     bit = get_bittrex_instance()
     btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*usdt_conversion('ETH'), bit.get_balance('BTC')['result']['Balance']*usdt_conversion('BTC')]
     i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
+    '''
+    Commented out for testing purposes.
+    
+    if balance ==  0:
+        print("No funds available.")
+        exit(0)
+    '''
     return i, balance
 
 def arbitrage_loop():
-    middle_assets = cycle(['LTC', 'DASH', 'XMR', 'DGB', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT',
-         'SNGLS', 'REP', 'NEO', 'ZEC', 'TIME', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'TKN', 'HMQ', 'ANT',
-         'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ',
-         'ADX', 'OMG', 'CVC', 'QTUM', 'BCC'])
-    middle_assets_iterator = iter(middle_assets)
-    bit = get_bittrex_instance()
-    while True:
-        bool_val, balance = check_balances()
-        start_asset = currency_check(bool_val)
-        middle_asset = next(middle_assets_iterator)
-        profitability = calculate(start_asset,  middle_asset, currency_check(not bool_val))
-        print(profitability)
-        if profitability > 1:
-            '''
-            This is where transaction takes place.
-            '''
-            print("Trade advised.")
-        else:
-            print("Trade not advised.")
+    try:
+        middle_assets = cycle(['LTC', 'DASH', 'XMR', 'DGB', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT',
+             'SNGLS', 'REP', 'NEO', 'ZEC', 'TIME', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'TKN', 'HMQ', 'ANT',
+             'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ',
+             'ADX', 'OMG', 'CVC', 'QTUM', 'BCC'])
+        middle_assets_iterator = iter(middle_assets)
+        bit = get_bittrex_instance()
+        while True:
+            bool_val, balance = check_balances()
+            start_asset = currency_check(bool_val)
+            middle_asset = next(middle_assets_iterator)
+            profitability = calculate(start_asset,  middle_asset, currency_check(not bool_val))
+            print(profitability)
+            if profitability > 1:
+                '''
+                This is where transaction takes place.
+                '''
+                print("Trade advised.")
+            else:
+                print("Trade not advised.")
+    except Exception:
+        '''
+        Print the state of holdings?
+        '''
+        print("\nCancelled")
+        exit(0)
 
 '''
 Calculates dollar value post trade(s)
