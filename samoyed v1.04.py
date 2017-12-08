@@ -50,8 +50,16 @@ def arbitrage_loop():
                 print("Trade skipped.")
     except Exception:
         '''
-        In the event the program is terminated in the middle of a transaction, balances are printed.
+        In the event the program is terminated in the middle of a transaction, balances are printed and open orders are cancelled
         '''
+        open_order_list = bit.get_open_orders()['result']
+        if open_order_list:
+            for order in open_order_list:
+                print("Cancelling", order['Exchange'], "order...")
+                if bit.cancel(order['OrderUuid'])['success'] == 'True':
+                    print("Cancelled.")
+                else:
+                    print("Order cannot be cancelled.")
         print("Holdings:", bit.get_balance('BTC')['result']['Balance'], "BTC,", bit.get_balance('ETH')['result']['Balance'], "ETH,", bit.get_balance(middle_asset)['result']['Balance'], middle_asset)
         print("\nTerminated.")
         exit(0)
