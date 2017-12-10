@@ -29,11 +29,12 @@ i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
 Once found, the **total contents of the wallet will be used**.  Choice of starting balance will be added in the future.
 
 ## TO DO
-- Fill or kill trading
+- ~~Fill or kill trading~~
 - ~~Cancel open orders when program is terminated~~
 - Final trade (BTC-ETH/ETH-BTC) on cycle completion
-- Rate return
+- ~~Rate return~~
 - Dynamic balance and starting asset choice
+- Dyanmic parameters for calculate function
 
 ## Acknowledgments
 This is built using a python wrapper for Bittrex's API found [here](https://github.com/ericsomdahl/python-bittrex).
