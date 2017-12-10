@@ -30,7 +30,7 @@ def check_balances():
 def arbitrage_loop():
     try:
         middle_assets = cycle(['LTC', 'DASH', 'XMR', 'DGB', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT',
-             'SNGLS', 'REP', 'NEO', 'ZEC', 'TIME', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'TKN', 'HMQ', 'ANT',
+             'SNGLS', 'REP', 'NEO', 'ZEC', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'HMQ', 'ANT',
              'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ',
              'ADX', 'OMG', 'CVC', 'QTUM', 'BCC'])
         middle_assets_iterator = iter(middle_assets)
@@ -39,15 +39,13 @@ def arbitrage_loop():
             bool_val, balance = check_balances()
             start_asset = currency_check(bool_val)
             middle_asset = next(middle_assets_iterator)
-            profitability = calculate(start_asset,  middle_asset, currency_check(not bool_val))
+            profitability, rate1, rate2 = calculate(start_asset,  middle_asset, currency_check(not bool_val))
             print(start_asset, "->", middle_asset, "->", currency_check(not bool_val), "=", 100*profitability, "% of pre-trade balance.")
             if profitability > 1:
-                '''
-                This is where transaction takes place.
-                '''
-                print("Trade completed.")
+                # transaction(start_asset, rate1, middle_asset, rate2, currency_check(not bool_val))
+                print("Completed.")
             else:
-                print("Trade skipped.")
+                print("Skipped.")
     except Exception:
         '''
         In the event the program is terminated in the middle of a transaction, balances are printed and open orders are cancelled
@@ -65,15 +63,16 @@ def arbitrage_loop():
         exit(0)
 
 '''
-Calculates dollar value post trade(s)
+Calculates dollar value post trade(s).  Original balance is 1 BTC/ETH, but traded amount is 99.7506234414% to account for fees as accurately as possible.
 '''
 def calculate(start_asset, middle_asset, final_asset):
-    balance = .9975062344
-    middle_asset_balance = order_finder(start_asset, balance, middle_asset, 'sell')
-    final_asset_balance = .9975*order_finder(final_asset, middle_asset_balance, middle_asset, 'buy')
-    return (final_asset_balance*usdt_conversion(final_asset))/(balance*usdt_conversion(start_asset))
+    balance = .997506234414
+    middle_asset_balance, rate1 = order_finder(start_asset, balance, middle_asset, 'sell')
+    final_asset_balance, rate2 = order_finder(final_asset, middle_asset_balance, middle_asset, 'buy')
+    final_asset_balance = final_asset_balance*.9975
+    return (final_asset_balance*usdt_conversion(final_asset))/(balance*usdt_conversion(start_asset)), rate1, rate2
 
-'''
+''' 
 Determines dollar value ratio of start/final asset
 '''
 def usdt_conversion(asset):
@@ -87,18 +86,54 @@ def order_finder(start_asset, balance, final_asset, order_type):
     bit = get_bittrex_instance()
     orders = bit.get_orderbook(start_asset + '-' + final_asset, order_type)['result']
     for order in orders:
+        rate = order['Rate']
         if order_type == 'sell':
-            final_asset_balance = balance / order['Rate']
+            final_asset_balance = balance / rate
         else:
-            final_asset_balance = balance * order['Rate']
+            final_asset_balance = balance * rate
         if final_asset_balance < order['Quantity']:
             break
-    return final_asset_balance
+    return final_asset_balance, rate
 
 '''
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-USE THIS TYPE OF FORMAT FOR THE ACTUAL TRANSACTIONS
+Dynamically takes in arguments - if only 3 arguments, then the final transaction is to take place.
 '''
+def transaction(*args):
+    bit = get_bittrex_instance()
+    arg_iter = iter(args)
+    start_asset, rate1, middle_asset = arg_iter.__next__(), arg_iter.__next__(), arg_iter.__next__()
+    try:
+        rate2, final_asset = arg_iter.__next__(), arg_iter.__next__()
+        if bit.trade_buy(start_asset + '-' + middle_asset, 'LIMIT', bit.get_balance(start_asset)['result']['Balance'], rate1, 'FILL_OR_KILL', 'NONE')['result']['success'] == 1:
+            sleeper(bit)
+            if bit.trade_sell(final_asset + '-' + middle_asset, 'LIMIT', bit.get_balance(middle_asset)['result']['Balance'], rate2, 'FILL_OR_KILL', 'NONE')['result']['success'] ==1:
+                sleeper(bit)
+            else:
+                print("Trade to final asset could not be completed. Terminating.")
+                exit(0)
+        else:
+            print("Trade to middle asset could not be completed. Terminating.")
+            exit(0)
+    except Exception:
+        if start_asset == 'BTC':
+            if bit.trade_buy('BTC-ETH', 'LIMIT', bit.get_balance(start_asset)['result']['Balance'], rate1, 'FILL_OR_KILL', 'NONE')['success'] == 1:
+                sleeper(bit)
+            else:
+                print("Trade between BTC/ETH could not be completed. Terminating.")
+                exit(0)
+        else:
+            if bit.trade_sell('BTC-ETH', 'LIMIT', bit.get_balance(start_asset)['result']['Balance'], rate1, 'FILL_OR_KILL','NONE')['success'] == 1:
+                sleeper(bit)
+            else:
+                print("Trade between BTC/ETH could not be completed. Terminating.")
+                exit(0)
+
+'''
+Wait while open orders are being filled
+'''
+def sleeper(bit):
+    while bit.get_open_orders()['result']:
+        time.sleep(1)
 
 '''
 If bool is 1, begin using BTC. If bool is 0, begin using ETH.
