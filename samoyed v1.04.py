@@ -5,38 +5,42 @@ import time
 def main():
     arbitrage_loop()
 
-'''
-Returns instance of bittrex using api key/secret
-'''
+#Returns instance of bittrex using api key/secret
+
 def get_bittrex_instance():
     return Bittrex('', '')
 
-'''
-Returns 0 or 1 (ETH or BTC), and the balance
-'''
-def check_balances():
-    bit = get_bittrex_instance()
+#Returns 0 or 1 (ETH or BTC), and the balance
+def check_balances(bit):
     btc_eth_list = [bit.get_balance('ETH')['result']['Balance']*usdt_conversion('ETH'), bit.get_balance('BTC')['result']['Balance']*usdt_conversion('BTC')]
     i, balance = btc_eth_list.index(max(btc_eth_list)), max(btc_eth_list)
     '''
-    Commented out for testing purposes.
-    
     if balance ==  0:
         print("No funds available.")
         exit(0)
     '''
     return i, balance
 
+#Retrieves a list of shared markets between BTC and ETH. Intentionally unused - lengthy process, and Bittrex can have markets listed that have been discontinued.
+def get_markets(bit):
+    market_list = []
+    for currency in bit.get_currencies()['result']:
+        if bit.get_marketsummary('BTC-' + currency['Currency'])['result'] and bit.get_marketsummary('ETH-' + currency['Currency'])['result']:
+            market_list.append(currency['Currency'])
+        print(market_list)
+    return market_list
+
+#SC has been removed
 def arbitrage_loop():
     try:
-        middle_assets = cycle(['LTC', 'DASH', 'XMR', 'DGB', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT',
-             'SNGLS', 'REP', 'NEO', 'ZEC', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'HMQ', 'ANT',
-             'BAT', '1ST', 'QRL', 'CRB', 'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ',
-             'ADX', 'OMG', 'CVC', 'QTUM', 'BCC'])
+        middle_assets = cycle(['LTC', 'DASH', 'XMR', 'DGB', 'XRP', 'XEM', 'XLM', 'FCT', 'DGD', 'WAVES', 'ETC', 'STRAT', 'SNGLS', 'REP', 'NEO',
+                               'ZEC', 'GNT', 'LGD', 'TRST', 'WINGS', 'RLC', 'GNO', 'GUP', 'LUN', 'HMQ', 'ANT', 'SC', 'BAT', '1ST', 'QRL', 'CRB',
+                               'PTOY', 'MYST', 'CFI', 'BNT', 'NMR', 'SNT', 'MCO', 'ADT', 'FUN', 'PAY', 'MTL', 'STORJ', 'ADX', 'OMG', 'CVC', 'QTUM',
+                               'BCC', 'DNT', 'ADA', 'MANA', 'SALT', 'TIX', 'RCN', 'VIB', 'POWR', 'BTG', 'ENG'])
         middle_assets_iterator = iter(middle_assets)
         bit = get_bittrex_instance()
         while True:
-            bool_val, balance = check_balances()
+            bool_val, balance = check_balances(bit)
             start_asset = currency_check(bool_val)
             middle_asset = next(middle_assets_iterator)
             profitability, rate1, rate2 = calculate(start_asset,  middle_asset, currency_check(not bool_val))
@@ -47,9 +51,7 @@ def arbitrage_loop():
             else:
                 print("Skipped.")
     except Exception:
-        '''
-        In the event the program is terminated in the middle of a transaction, balances are printed and open orders are cancelled
-        '''
+        #In the event the program is terminated in the middle of a transaction, balances are printed and open orders are cancelled
         open_order_list = bit.get_open_orders()['result']
         if open_order_list:
             for order in open_order_list:
@@ -62,9 +64,7 @@ def arbitrage_loop():
         print("\nTerminated.")
         exit(0)
 
-'''
-Calculates dollar value post trade(s).  Original balance is 1 BTC/ETH, but traded amount is 99.7506234414% to account for fees as accurately as possible.
-'''
+#Calculates dollar value post trade(s).  Original balance is 1 BTC/ETH, but traded amount is 99.7506234414% to account for fees as accurately as possible.
 def calculate(start_asset, middle_asset, final_asset):
     balance = .997506234414
     middle_asset_balance, rate1 = order_finder(start_asset, balance, middle_asset, 'sell')
@@ -72,16 +72,12 @@ def calculate(start_asset, middle_asset, final_asset):
     final_asset_balance = final_asset_balance*.9975
     return (final_asset_balance*usdt_conversion(final_asset))/(balance*usdt_conversion(start_asset)), rate1, rate2
 
-''' 
-Determines dollar value ratio of start/final asset
-'''
+#Determines dollar value ratio of start/final asset
 def usdt_conversion(asset):
     bit = get_bittrex_instance()
     return bit.get_orderbook('USDT-' + asset, 'buy')['result'][0]['Rate']
 
-'''
-Retrieves the orderbook of supplied type and finds order of sufficient quantity for fill or kill
-'''
+#Retrieves the orderbook of supplied type and finds order of sufficient quantity for fill or kill
 def order_finder(start_asset, balance, final_asset, order_type):
     bit = get_bittrex_instance()
     orders = bit.get_orderbook(start_asset + '-' + final_asset, order_type)['result']
@@ -95,9 +91,8 @@ def order_finder(start_asset, balance, final_asset, order_type):
             break
     return final_asset_balance, rate
 
-'''
-Dynamically takes in arguments - if only 3 arguments, then the final transaction is to take place.
-'''
+
+#Dynamically takes in arguments - if only 3 arguments, then the final transaction is to take place.
 def transaction(*args):
     bit = get_bittrex_instance()
     arg_iter = iter(args)
@@ -128,16 +123,12 @@ def transaction(*args):
                 print("Trade between BTC/ETH could not be completed. Terminating.")
                 exit(0)
 
-'''
-Wait while open orders are being filled
-'''
+#Wait while open orders are being filled
 def sleeper(bit):
     while bit.get_open_orders()['result']:
         time.sleep(1)
 
-'''
-If bool is 1, begin using BTC. If bool is 0, begin using ETH.
-'''
+#If bool is 1, begin using BTC. If bool is 0, begin using ETH.
 def currency_check(bool):
     if bool == True:
         return 'BTC'
